@@ -36,7 +36,6 @@
 #include <linux/of_device.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/input.h>
-#include <math.h>
 
 /*
  * Include the PWMSS subsystem headers, because this unit controls
