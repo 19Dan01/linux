@@ -36,6 +36,7 @@
 #include <linux/of_device.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/input.h>
+#include <math.h>
 
 /*
  * Include the PWMSS subsystem headers, because this unit controls
@@ -59,7 +60,7 @@
 #define QWDPRD		0x0026
 #define QDECCTL		0x0028
 #define QEPCTL		0x002A
-#define QCAPCTL		0x002C
+#define QCAPCTL		0x0004
 #define QPOSCTL		0x002E
 #define QEINT		0x0030
 #define QFLG		0x0032
@@ -146,6 +147,10 @@ struct EQEP_REGS {
 #define UPPS2		(1 << 2)
 #define UPPS1		(1 << 1)
 #define UPPS0		(1 << 0)
+#define CCPS		(3 << 6)
+#define CCPS		(2 << 5)
+#define CCPS		(1 << 4)
+
 
 /* Bits for the QPOSCTL register */
 #define PCSHDW		(1 << 15)
@@ -164,6 +169,16 @@ struct EQEP_REGS {
 #define PCSPW2		(1 << 2)
 #define PCSPW1		(1 << 1)
 #define PCSPW0		(1 << 0)
+
+/* Bits for the QEPSTS register */
+#define UPEVNT		(1 << 7)
+#define FDF		(1 << 6)
+#define QDF		(1 << 5)
+#define QDLF		(1 << 4)
+#define COEF		(1 << 3)
+#define CDEF		(1 << 2)
+#define FIMF		(1 << 1)
+#define PCEF		(1 << 0)
 
 /* Bits for the interrupt registers */
 #define EQEP_INTERRUPT_MASK	0x0FFF
@@ -329,6 +344,41 @@ static ssize_t eqep_set_position(struct device *dev, struct device_attribute *at
 	return count;
 }
 
+/* Function to read the current velocity of the eQEP */
+static ssize_t eqep_get_velocity(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct eqep_chip *eqep = dev_get_drvdata(dev);
+	
+	double velocity = 0;1
+	REG32	q_poslat;
+
+	if (readl(eqep->mmio_base + COEF)) {
+		/*set Velocity to Zero if Timer Overflow occured*/
+		velocity = 0;
+	} else if (readl(eqep->mmio_base + CDEF)) {
+		/* set Velocity to Zero if rotation change occured */
+		velocity = 0;
+	}
+	else if (readl(eqep->mmio_base + QCPRD)>1000) {
+		/* Calculate Velocity for low speeds */
+		velocity = do_div(0.0015707963267948966192313217, (do_div(readl(eqep->mmio_base + QCPRD)), 3125000);
+			}
+	else {
+		/* Calculate Velocity for high speeds */
+		velocity = do_div((readl(eqep->mmio_base + QPOSLAT)-q_poslatold),readl(eqep->mmio_base + QUPRD));
+	}
+	
+ 	REG32	q_poslatold = q_poslat;
+	return velocity;
+}
+
+/* Function to set velocity of the eQEP hardware */
+static ssize_t eqep_set_velocity(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+
+	return count;
+}
+
 /* Function to read the period of the unit time event timer */
 static ssize_t eqep_get_timer_period(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -434,6 +484,7 @@ static DEVICE_ATTR(enabled,	0644, eqep_get_enabled,		eqep_set_enabled);
 static DEVICE_ATTR(position,	0644, eqep_get_position,	eqep_set_position);
 static DEVICE_ATTR(period,	0644, eqep_get_timer_period,	eqep_set_timer_period);
 static DEVICE_ATTR(mode,	0644, eqep_get_mode,		eqep_set_mode);
+static DEVICE_ATTR(velocity,	0644, eqep_get_velocity,	eqep_set_velocity);
 
 /* Array holding all of the sysfs entries */
 static const struct attribute *eqep_attrs[] = {
@@ -441,6 +492,7 @@ static const struct attribute *eqep_attrs[] = {
 	&dev_attr_position.attr,
 	&dev_attr_period.attr,
 	&dev_attr_mode.attr,
+	&dev_attr_velocity.attr,
 	NULL,
 };
 
