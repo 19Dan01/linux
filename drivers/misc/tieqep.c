@@ -146,9 +146,7 @@ struct EQEP_REGS {
 #define UPPS2		(1 << 2)
 #define UPPS1		(1 << 1)
 #define UPPS0		(1 << 0)
-#define CCPS		(3 << 6)
-#define CCPS		(2 << 5)
-#define CCPS		(1 << 4)
+
 
 
 /* Bits for the QPOSCTL register */
@@ -348,27 +346,27 @@ static ssize_t eqep_get_velocity(struct device *dev, struct device_attribute *at
 {
 	struct eqep_chip *eqep = dev_get_drvdata(dev);
 	
-	double velocity = 0;1
-	REG32	q_poslat;
+	 s32 velocity = 0;
+	 u16 state = readw(eqep->mmio_base + QEPSTS);
 
-	if (readl(eqep->mmio_base + COEF)) {
+
+	if (readl(state & COEF == COEF)) {
 		/*set Velocity to Zero if Timer Overflow occured*/
 		velocity = 0;
-	} else if (readl(eqep->mmio_base + CDEF)) {
+	} else if (state & CDEF == CDEF)) {
 		/* set Velocity to Zero if rotation change occured */
 		velocity = 0;
 	}
-	else if (readl(eqep->mmio_base + QCPRD)>1000) {
-		/* Calculate Velocity for low speeds */
-		velocity = do_div(0.0015707963267948966192313217, (do_div(readl(eqep->mmio_base + QCPRD)), 3125000);
-			}
 	else {
 		/* Calculate Velocity for high speeds */
-		velocity = do_div((readl(eqep->mmio_base + QPOSLAT)-q_poslatold),readl(eqep->mmio_base + QUPRD));
+		velocity = (readl(eqep->mmio_base + QCPRD);
+		if (state & QDF != QDF)) {
+			velocity = velocity*-1
+		}
+		
 	}
 	
- 	REG32	q_poslatold = q_poslat;
-	return velocity;
+	return sprintf(buf, "%d\n", velocity);
 }
 
 /* Function to set velocity of the eQEP hardware */
