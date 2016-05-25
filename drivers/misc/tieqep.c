@@ -369,7 +369,7 @@ static ssize_t eqep_get_velocity(struct device *dev, struct device_attribute *at
 	return sprintf(buf, "%d\n", velocity);
 }
 
-/* Function to set velocity of the eQEP hardware */
+/* Function to set velocity prescaler of the eQEP hardware */
 static ssize_t eqep_set_velocity(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 
